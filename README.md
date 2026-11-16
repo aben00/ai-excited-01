@@ -8,7 +8,7 @@ A tiny rocket smashes out of a snow globe on a quiet desk and streaks straight a
 
 ## How it works
 
-The entrypoint writes the image to `entry.png`, then validates that it is a real JPEG at 1024×1024, and prints its SHA-256 so the output can be checked byte for byte. The rocket art was fixed in round 3 so the exhaust trails only behind the tail — the nose cone stays clean.
+The entrypoint writes the image to `entry.png`, then validates that it is a real JPEG at 1024×1024, and prints its SHA-256 so the output can be checked byte for byte. The rocket art was fixed in round 3 so the exhaust trails only behind the tail — the nose cone stays clean. In round 4 the art was redrawn in crayon with purple cosmic smoke, stars and stardust curling around the scene — classic crayon, modern cosmic.
 
 ## Run it
 

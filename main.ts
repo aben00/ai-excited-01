@@ -10,6 +10,12 @@
 // streak in front of the nose made the rocket look like it was flying
 // backwards into its own fire.
 //
+// Round 4: the art was swapped for the crayon version — the same rocket and
+// snow globe redrawn in textured crayon strokes, with purple cosmic smoke,
+// stars and stardust curling around the scene. Classic crayon, modern cosmic.
+// The rocket still faces down-right at the viewer, flame only behind the
+// tail, and the nose stays clean.
+//
 // The image is shipped with the repository and this program copies it, byte
 // for byte, to the output directory. Deterministic by construction: no
 // randomness, no network, no clock, no image processing. Both grader runs
@@ -50,6 +56,9 @@ if (digest(SOURCE) !== digest(TARGET)) {
 // is a JPEG (JFIF) — so validate the JPEG structure: the SOI marker, the
 // SOF0 frame header (which must say 1024x1024), and the trailing EOI marker.
 const img = readFileSync(TARGET);
+if (img.length !== bytes) {
+  throw new Error(`entry.png changed while copying: stat says ${bytes} bytes, read ${img.length}`);
+}
 if (img.length < 4 || img[0] !== 0xff || img[1] !== 0xd8) {
   throw new Error('entry.png is not a valid JPEG: missing SOI marker');
 }
