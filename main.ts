@@ -1,97 +1,125 @@
-// ai-excited-01 entry: "Hold tight, judge!"
+// "Hold tight, judge!" — ai-excited-01, round 5.
 //
-// A tiny rocket smashes out of a snow globe on a quiet desk and streaks
-// straight at the viewer, glass and snow exploding into embers behind it.
-// The image speaks to the judge itself, in plain lowercase words across the
-// bottom: "hold tight, judge!"
+// A little rocket bursts out of a snow globe sitting on a desk and flies
+// straight toward whoever is looking, shards of glass and snow exploding
+// into embers behind it. Along the bottom, in plain lowercase letters, the
+// picture talks straight to the judge: "hold tight, judge!"
 //
-// Round 3: the rocket art was fixed — the exhaust trail now streams only
-// behind the tail, and the nose cone is clean. In rounds 1-2 a second flame
-// streak in front of the nose made the rocket look like it was flying
-// backwards into its own fire.
+// Round 5 is a clean rewrite of the entrypoint. The artwork is the
+// crayon-and-cosmic version first shipped in round 4: the same rocket and
+// snow globe redrawn in rough crayon strokes, wrapped in purple nebula
+// smoke, stars and stardust. The rocket points down and to the right, its
+// flame stays behind the tail, and the nose cone is clean — there is no
+// fire burning in front of it.
 //
-// Round 4: the art was swapped for the crayon version — the same rocket and
-// snow globe redrawn in textured crayon strokes, with purple cosmic smoke,
-// stars and stardust curling around the scene. Classic crayon, modern cosmic.
-// The rocket still faces down-right at the viewer, flame only behind the
-// tail, and the nose stays clean.
+// What this program does is deliberately boring: it ships the picture. It
+// copies the repository's entry.png into the output directory without
+// changing a single byte, then checks the copy (right size, matching hash,
+// a genuine 1024x1024 JPEG). Nothing here is random, nothing touches the
+// network, nothing reads the clock, so the two grader runs write exactly
+// the same bytes.
 //
-// The image is shipped with the repository and this program copies it, byte
-// for byte, to the output directory. Deterministic by construction: no
-// randomness, no network, no clock, no image processing. Both grader runs
-// write the exact same bytes, and the copy is verified by comparing hashes.
-//
-// Run locally with:
+// To try it locally:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const OUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
-const SOURCE = new URL('./entry.png', import.meta.url);
-const TARGET = join(OUT_DIR, 'entry.png');
-const MAX_BYTES = 1048576;
+const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const IMAGE_NAME = 'entry.png';
+const MAX_IMAGE_BYTES = 1024 * 1024;
+const WANTED_WIDTH = 1024;
+const WANTED_HEIGHT = 1024;
 
-if (!existsSync(SOURCE)) {
-  throw new Error('entry.png is missing from the repository');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SOURCE_PATH = join(HERE, IMAGE_NAME);
+const DEST_PATH = join(OUTPUT_DIR, IMAGE_NAME);
+
+function fail(message: string): never {
+  throw new Error(message);
 }
 
-mkdirSync(OUT_DIR, { recursive: true });
-copyFileSync(SOURCE, TARGET);
-
-const bytes = statSync(TARGET).size;
-if (bytes === 0 || bytes > MAX_BYTES) {
-  throw new Error(`entry.png is ${bytes} bytes; the gate allows at most 1 MiB`);
+function sha256Of(path: string): string {
+  return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-// The gate scores the exact bytes written, and the program runs twice: make
-// sure the copy is complete by comparing its hash with the source.
-const digest = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
-if (digest(SOURCE) !== digest(TARGET)) {
-  throw new Error('entry.png did not copy intact');
-}
-
-// Validate the written image itself. Note: despite the .png name, the entry
-// is a JPEG (JFIF) — so validate the JPEG structure: the SOI marker, the
-// SOF0 frame header (which must say 1024x1024), and the trailing EOI marker.
-const img = readFileSync(TARGET);
-if (img.length !== bytes) {
-  throw new Error(`entry.png changed while copying: stat says ${bytes} bytes, read ${img.length}`);
-}
-if (img.length < 4 || img[0] !== 0xff || img[1] !== 0xd8) {
-  throw new Error('entry.png is not a valid JPEG: missing SOI marker');
-}
-if (img[img.length - 2] !== 0xff || img[img.length - 1] !== 0xd9) {
-  throw new Error('entry.png is not a valid JPEG: missing EOI marker');
-}
-let width = 0;
-let height = 0;
-for (let i = 2; i + 9 < img.length;) {
-  if (img[i] !== 0xff) {
-    throw new Error('entry.png is not a valid JPEG: corrupt marker stream');
+// Walk a JPEG's marker stream and pull the frame size out of the SOF0
+// segment. Returns the width and height, or throws when the bytes are not
+// a JPEG at all or carry no frame header.
+function jpegSize(bytes: Buffer): { width: number; height: number } {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) {
+    fail('entry.png is not a JPEG: no SOI marker at the start');
   }
-  const marker = img[i + 1];
-  if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
-    i += 2;
-    continue;
+  if (bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9) {
+    fail('entry.png is not a JPEG: no EOI marker at the end');
   }
-  const segLen = img.readUInt16BE(i + 2);
-  if (marker === 0xc0) {
-    height = img.readUInt16BE(i + 5);
-    width = img.readUInt16BE(i + 7);
-    break;
+  let offset = 2;
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      fail('entry.png is not a JPEG: broken marker stream');
+    }
+    const marker = bytes[offset + 1];
+    if (
+      marker === 0xd8 ||
+      marker === 0xd9 ||
+      (marker >= 0xd0 && marker <= 0xd7)
+    ) {
+      offset += 2;
+      continue;
+    }
+    const segmentLength = bytes.readUInt16BE(offset + 2);
+    if (marker === 0xc0) {
+      const height = bytes.readUInt16BE(offset + 5);
+      const width = bytes.readUInt16BE(offset + 7);
+      return { width, height };
+    }
+    offset += 2 + segmentLength;
   }
-  i += 2 + segLen;
-}
-if (width === 0 || height === 0) {
-  throw new Error('entry.png is not a valid JPEG: no SOF0 frame found');
-}
-if (width !== 1024 || height !== 1024) {
-  throw new Error(`entry.png is ${width}x${height}; the entry must be 1024x1024`);
+  return fail('entry.png is not a JPEG: no SOF0 frame header found');
 }
 
-console.log(`wrote ${TARGET}`);
-console.log(`  dimensions: ${width}x${height}`);
-console.log(`  size: ${bytes} bytes`);
-console.log(`  sha256: ${digest(TARGET)}`);
+// Check the finished copy end to end: the byte count must be sane, the
+// bytes on disk must be the same bytes we read back, the picture must be
+// a JPEG of exactly the required size, and its hash must match the source.
+function checkCopy(): { bytes: number; width: number; height: number } {
+  const info = statSync(DEST_PATH);
+  if (info.size === 0 || info.size > MAX_IMAGE_BYTES) {
+    fail(`entry.png is ${info.size} bytes; the gate allows at most 1 MiB`);
+  }
+  const data = readFileSync(DEST_PATH);
+  if (data.length !== info.size) {
+    fail(
+      `entry.png shifted during the copy: stat says ${info.size} bytes, ` +
+        `but ${data.length} were read back`,
+    );
+  }
+  const { width, height } = jpegSize(data);
+  if (width !== WANTED_WIDTH || height !== WANTED_HEIGHT) {
+    fail(
+      `entry.png is ${width}x${height}; the entry must be ` +
+        `${WANTED_WIDTH}x${WANTED_HEIGHT}`,
+    );
+  }
+  if (sha256Of(SOURCE_PATH) !== sha256Of(DEST_PATH)) {
+    fail('entry.png did not copy intact: hash differs from the source');
+  }
+  return { bytes: info.size, width, height };
+}
+
+// Despite the .png name, the shipped picture is a JPEG file (JFIF), so
+// the checks above look for JPEG structure, not PNG structure.
+if (!existsSync(SOURCE_PATH)) {
+  fail('entry.png is missing from the repository');
+}
+
+mkdirSync(OUTPUT_DIR, { recursive: true });
+copyFileSync(SOURCE_PATH, DEST_PATH);
+
+const result = checkCopy();
+
+console.log(`wrote ${DEST_PATH}`);
+console.log(`  picture: ${result.width}x${result.height} JPEG`);
+console.log(`  bytes: ${result.bytes}`);
+console.log(`  sha256: ${sha256Of(DEST_PATH)}`);

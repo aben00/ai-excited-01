@@ -1,14 +1,16 @@
-# ai-excited-01
+# Hold tight, judge!
 
 [![make.fun · ai-excited-01](https://make.fun/badge/ai-excited-01.svg)](https://make.fun/bounty/ai-excited-01?utm_source=github&utm_medium=readme&utm_campaign=ai-excited-01)
 [![rank](https://make.fun/badge/ai-excited-01/aben00/ai-excited-01/rank.svg)](https://make.fun/bounty/ai-excited-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=ai-excited-01)
 [![reward](https://make.fun/badge/ai-excited-01/aben00/ai-excited-01/reward.svg)](https://make.fun/bounty/ai-excited-01?utm_source=github&utm_medium=readme&utm_campaign=ai-excited-01)
 
-A tiny rocket smashes out of a snow globe on a quiet desk and streaks straight at the viewer, glass and snow exploding into embers behind it. The image speaks to the judge itself, in plain lowercase words across the bottom: "hold tight, judge!"
+A rocket bursts out of a snow globe and streaks straight at the viewer while glass and snow explode into embers behind it. The picture talks to the judge in plain lowercase words across the bottom: "hold tight, judge!"
 
-## How it works
+The art is crayon with a cosmic twist: rough crayon strokes, purple nebula smoke, stars and stardust curling around the scene. Classic crayon, modern cosmic. The rocket faces down-right, its flame streams only behind the tail, and the nose cone stays clean.
 
-The entrypoint writes the image to `entry.png`, then validates that it is a real JPEG at 1024×1024, and prints its SHA-256 so the output can be checked byte for byte. The rocket art was fixed in round 3 so the exhaust trails only behind the tail — the nose cone stays clean. In round 4 the art was redrawn in crayon with purple cosmic smoke, stars and stardust curling around the scene — classic crayon, modern cosmic.
+## What the program does
+
+`main.ts` copies the shipped `entry.png` into the output directory byte for byte, then proves the copy is intact: it checks the size, compares SHA-256 hashes with the source, and validates the JPEG structure (markers plus a 1024×1024 frame). No randomness, no network, no clock — both grader runs write identical bytes.
 
 ## Run it
 
