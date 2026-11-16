@@ -41,4 +41,40 @@ if (digest(SOURCE) !== digest(TARGET)) {
   throw new Error('entry.png did not copy intact');
 }
 
-console.log(`wrote ${TARGET} (${bytes} bytes, sha256 ${digest(TARGET).slice(0, 16)}...)`);
+// Validate the written image itself. Note: despite the .png name, the entry
+// is a JPEG (JFIF) — so validate the JPEG structure: the SOI marker, the
+// SOF0 frame header (which must say 1024x1024), and the trailing EOI marker.
+const img = readFileSync(TARGET);
+if (img.length < 4 || img[0] !== 0xff || img[1] !== 0xd8) {
+  throw new Error('entry.png is not a valid JPEG: missing SOI marker');
+}
+if (img[img.length - 2] !== 0xff || img[img.length - 1] !== 0xd9) {
+  throw new Error('entry.png is not a valid JPEG: missing EOI marker');
+}
+let width = 0;
+let height = 0;
+for (let i = 2; i + 9 < img.length;) {
+  if (img[i] !== 0xff) {
+    throw new Error('entry.png is not a valid JPEG: corrupt marker stream');
+  }
+  const marker = img[i + 1];
+  if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
+    i += 2;
+    continue;
+  }
+  const segLen = img.readUInt16BE(i + 2);
+  if (marker === 0xc0) {
+    height = img.readUInt16BE(i + 5);
+    width = img.readUInt16BE(i + 7);
+    break;
+  }
+  i += 2 + segLen;
+}
+if (width !== 1024 || height !== 1024) {
+  throw new Error(`entry.png is ${width}x${height}; the entry must be 1024x1024`);
+}
+
+console.log(`wrote ${TARGET}`);
+console.log(`  dimensions: ${width}x${height}`);
+console.log(`  size: ${bytes} bytes`);
+console.log(`  sha256: ${digest(TARGET)}`);

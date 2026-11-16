@@ -6,6 +6,10 @@
 
 A tiny rocket smashes out of a snow globe on a quiet desk and streaks straight at the viewer, glass and snow exploding into embers behind it. The image speaks to the judge itself, in plain lowercase words across the bottom: "hold tight, judge!"
 
+## How it works
+
+The entrypoint writes the image to `entry.png`, then validates that it is a real JPEG at 1024×1024, and prints its SHA-256 so the output can be checked byte for byte.
+
 ## Run it
 
 ```sh
