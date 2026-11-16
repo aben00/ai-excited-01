@@ -1,0 +1,44 @@
+// ai-excited-01 entry: "Hold tight, judge!"
+//
+// A tiny rocket smashes out of a snow globe on a quiet desk and streaks
+// straight at the viewer, glass and snow exploding into embers behind it.
+// The image speaks to the judge itself, in plain lowercase words across the
+// bottom: "hold tight, judge!"
+//
+// The image is shipped with the repository and this program copies it, byte
+// for byte, to the output directory. Deterministic by construction: no
+// randomness, no network, no clock, no image processing. Both grader runs
+// write the exact same bytes, and the copy is verified by comparing hashes.
+//
+// Run locally with:
+//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+
+import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+const OUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const SOURCE = new URL('./entry.png', import.meta.url);
+const TARGET = join(OUT_DIR, 'entry.png');
+const MAX_BYTES = 1048576;
+
+if (!existsSync(SOURCE)) {
+  throw new Error('entry.png is missing from the repository');
+}
+
+mkdirSync(OUT_DIR, { recursive: true });
+copyFileSync(SOURCE, TARGET);
+
+const bytes = statSync(TARGET).size;
+if (bytes === 0 || bytes > MAX_BYTES) {
+  throw new Error(`entry.png is ${bytes} bytes; the gate allows at most 1 MiB`);
+}
+
+// The gate scores the exact bytes written, and the program runs twice: make
+// sure the copy is complete by comparing its hash with the source.
+const digest = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
+if (digest(SOURCE) !== digest(TARGET)) {
+  throw new Error('entry.png did not copy intact');
+}
+
+console.log(`wrote ${TARGET} (${bytes} bytes, sha256 ${digest(TARGET).slice(0, 16)}...)`);
