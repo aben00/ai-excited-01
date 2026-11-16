@@ -5,6 +5,11 @@
 // The image speaks to the judge itself, in plain lowercase words across the
 // bottom: "hold tight, judge!"
 //
+// Round 3: the rocket art was fixed — the exhaust trail now streams only
+// behind the tail, and the nose cone is clean. In rounds 1-2 a second flame
+// streak in front of the nose made the rocket look like it was flying
+// backwards into its own fire.
+//
 // The image is shipped with the repository and this program copies it, byte
 // for byte, to the output directory. Deterministic by construction: no
 // randomness, no network, no clock, no image processing. Both grader runs
@@ -69,6 +74,9 @@ for (let i = 2; i + 9 < img.length;) {
     break;
   }
   i += 2 + segLen;
+}
+if (width === 0 || height === 0) {
+  throw new Error('entry.png is not a valid JPEG: no SOF0 frame found');
 }
 if (width !== 1024 || height !== 1024) {
   throw new Error(`entry.png is ${width}x${height}; the entry must be 1024x1024`);
